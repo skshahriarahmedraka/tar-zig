@@ -1,0 +1,52 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below if you use Go modules)
+# /vendor/
+
+# Go workspace file
+go.work
+
+# Go build cache
+go-build/
+
+# IDE/editor specific files
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+tmp
+deployment/local/docker/data/
+deployment/local/docker/logs/
+
+# Vault sensitive files
+deployment/local/docker/vault-keys.json
+deployment/local/docker/vault-token.txt
+deployment/local/docker/vault-backup-*.json
+
+# Environment files with secrets
+.env
+deployment/local/docker/data/*
+deployment/local/docker/data/redis_data/appendonlydir
+**/data/redis_data/
+**/data/scylladb_data/
+**/data/postgres_data/
+coreutils 
+.zig-cache/
+zig-out/
+*.o
+tar
+tmp*
