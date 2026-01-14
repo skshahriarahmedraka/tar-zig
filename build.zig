@@ -136,6 +136,34 @@ pub fn build(b: *std.Build) void {
 
     const run_pax_tests = b.addRunArtifact(pax_tests);
 
+    // GNU compatibility tests
+    const gnu_compat_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/test_gnu_compat.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "tar_header", .module = tar_module },
+            },
+        }),
+    });
+
+    const run_gnu_compat_tests = b.addRunArtifact(gnu_compat_tests);
+
+    // Extract edge case tests
+    const extract_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/tests/test_extract_edge_cases.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "tar_header", .module = tar_module },
+            },
+        }),
+    });
+
+    const run_extract_tests = b.addRunArtifact(extract_tests);
+
     const test_step = b.step("test", "Run all unit tests");
     test_step.dependOn(&run_unit_tests.step);
     test_step.dependOn(&run_hardlink_tests.step);
@@ -144,4 +172,6 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_large_tests.step);
     test_step.dependOn(&run_checksum_tests.step);
     test_step.dependOn(&run_pax_tests.step);
+    test_step.dependOn(&run_gnu_compat_tests.step);
+    test_step.dependOn(&run_extract_tests.step);
 }

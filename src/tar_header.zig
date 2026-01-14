@@ -265,6 +265,12 @@ pub const PosixHeader = extern struct {
         @memcpy(&self.version, USTAR_VERSION);
     }
 
+    /// Set GNU tar magic (oldgnu format)
+    pub fn setGnuMagic(self: *PosixHeader) void {
+        @memcpy(self.magic[0..6], GNU_MAGIC);
+        @memcpy(&self.version, "  ");
+    }
+
     /// Set user name
     pub fn setUname(self: *PosixHeader, name: []const u8) void {
         @memset(&self.uname, 0);
@@ -406,6 +412,34 @@ pub fn formatBase256(buf: []u8, value: u64) void {
 /// Calculate how many blocks are needed for a given size
 pub fn blocksNeeded(size: u64) u64 {
     return (size + BLOCK_SIZE - 1) / BLOCK_SIZE;
+}
+
+/// Check if a filename requires GNU long name extension
+/// Returns true if name is longer than 100 characters (POSIX limit)
+/// or longer than 256 characters (POSIX with prefix limit)
+pub fn needsGnuLongName(name: []const u8) bool {
+    // If name is <= 100 chars, it fits in the name field
+    if (name.len <= 100) return false;
+    
+    // If name is > 256 chars, it definitely needs GNU extension
+    if (name.len > 256) return true;
+    
+    // For names 101-256 chars, check if we can use prefix
+    // We need to find a '/' that allows split into prefix (<=155) and name (<=100)
+    var i: usize = name.len;
+    while (i > 0) {
+        i -= 1;
+        if (name[i] == '/') {
+            const prefix_len = i;
+            const name_part_len = name.len - i - 1;
+            if (prefix_len <= 155 and name_part_len <= 100) {
+                return false; // Can use prefix/name split
+            }
+        }
+    }
+    
+    // No valid split found, needs GNU long name
+    return true;
 }
 
 // Tests
