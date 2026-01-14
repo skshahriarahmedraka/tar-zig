@@ -7,6 +7,7 @@ const append = @import("append.zig");
 const update = @import("update.zig");
 const diff = @import("diff.zig");
 const delete = @import("delete.zig");
+const concatenate = @import("concatenate.zig");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -29,6 +30,7 @@ pub fn main() !void {
         .update => try update.execute(allocator, opts),
         .diff => try diff.execute(allocator, opts),
         .delete => try delete.execute(allocator, opts),
+        .concatenate => try concatenate.execute(allocator, opts),
         .none => {
             try options.printUsage();
             return error.NoOperationSpecified;
@@ -49,6 +51,7 @@ test {
     _ = @import("update.zig");
     _ = @import("diff.zig");
     _ = @import("delete.zig");
+    _ = @import("concatenate.zig");
     _ = @import("file_utils.zig");
     _ = @import("tests/integration_tests.zig");
 }

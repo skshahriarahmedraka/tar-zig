@@ -120,7 +120,7 @@ pub fn execute(allocator: std.mem.Allocator, opts: options.Options) !void {
 
         // Output based on verbosity
         if (opts.verbosity == .verbose or opts.verbosity == .very_verbose) {
-            try printVerbose(allocator, stdout, header, name);
+            try printVerbose(allocator, stdout, header, name, opts);
         } else {
             try stdout.writeAll(name);
             try stdout.writeAll("\n");
@@ -135,11 +135,13 @@ pub fn execute(allocator: std.mem.Allocator, opts: options.Options) !void {
 }
 
 /// Print verbose listing (like ls -l)
-fn printVerbose(allocator: std.mem.Allocator, file: std.fs.File, header: *const PosixHeader, name: []const u8) !void {
+fn printVerbose(allocator: std.mem.Allocator, file: std.fs.File, header: *const PosixHeader, name: []const u8, opts: options.Options) !void {
     const type_flag = header.getTypeFlag();
     const mode = header.getMode() catch 0;
     const size = header.getSize() catch 0;
     const mtime = header.getMtime() catch 0;
+    const uid = header.getUid() catch 0;
+    const gid = header.getGid() catch 0;
     const uname_field = header.getUname();
     const gname_field = header.getGname();
 
@@ -175,24 +177,43 @@ fn printVerbose(allocator: std.mem.Allocator, file: std.fs.File, header: *const 
     const month_day = year_day.calculateMonthDay();
     const month_name = months[@intFromEnum(month_day.month) - 1];
 
-    // Owner/group names
-    const owner = if (uname_field.len > 0) uname_field else "unknown";
-    const group = if (gname_field.len > 0) gname_field else "unknown";
+    // Format owner/group based on --numeric-owner option
+    if (opts.numeric_owner) {
+        // Use numeric UID/GID
+        const line = try std.fmt.allocPrint(allocator, "{c}{s} {d: <8}/{d: <8} {d: >10} {s} {d:0>2} {d:0>2}:{d:0>2} {s}", .{
+            type_char,
+            perms,
+            uid,
+            gid,
+            size,
+            month_name,
+            month_day.day_index + 1,
+            day_seconds.getHoursIntoDay(),
+            day_seconds.getMinutesIntoHour(),
+            name,
+        });
+        defer allocator.free(line);
+        try file.writeAll(line);
+    } else {
+        // Use names (or numeric if names not available)
+        const owner = if (uname_field.len > 0) uname_field else "unknown";
+        const group = if (gname_field.len > 0) gname_field else "unknown";
 
-    const line = try std.fmt.allocPrint(allocator, "{c}{s} {s: <8}/{s: <8} {d: >10} {s} {d:0>2} {d:0>2}:{d:0>2} {s}", .{
-        type_char,
-        perms,
-        owner,
-        group,
-        size,
-        month_name,
-        month_day.day_index + 1,
-        day_seconds.getHoursIntoDay(),
-        day_seconds.getMinutesIntoHour(),
-        name,
-    });
-    defer allocator.free(line);
-    try file.writeAll(line);
+        const line = try std.fmt.allocPrint(allocator, "{c}{s} {s: <8}/{s: <8} {d: >10} {s} {d:0>2} {d:0>2}:{d:0>2} {s}", .{
+            type_char,
+            perms,
+            owner,
+            group,
+            size,
+            month_name,
+            month_day.day_index + 1,
+            day_seconds.getHoursIntoDay(),
+            day_seconds.getMinutesIntoHour(),
+            name,
+        });
+        defer allocator.free(line);
+        try file.writeAll(line);
+    }
 
     // Print link target for symlinks
     if (type_flag == .symbolic_link) {
